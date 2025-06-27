@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "793669247885",
+    "project_id": "rawigo2-1e2ab",
+    "storage_bucket": "rawigo2-1e2ab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:793669247885:android:86c3ddd9c5ac6bd61693c4",
+        "android_client_info": {
+          "package_name": "com.abdoonin.rawigo2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7qvniI9uJA55z3vRfCQuhnRehMnA6OZ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:793669247885:android:4763685bd9af00601693c4",
+        "android_client_info": {
+          "package_name": "com.example.rawi_go"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7qvniI9uJA55z3vRfCQuhnRehMnA6OZ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
