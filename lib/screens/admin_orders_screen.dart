@@ -1,13 +1,74 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class AdminOrdersScreen extends StatelessWidget {
+class AdminOrdersScreen extends StatefulWidget {
   const AdminOrdersScreen({super.key});
 
   @override
+  State<AdminOrdersScreen> createState() => _AdminOrdersScreenState();
+}
+
+class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
+  bool isAdmin = false;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    checkAdminStatus();
+  }
+
+  Future<void> checkAdminStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        isLoading = false;
+        isAdmin = false;
+      });
+      return;
+    }
+
+    final doc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+    final role = doc.data()?['role'];
+
+    setState(() {
+      isAdmin = role == 'admin';
+      isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("إدارة الطلبات"),
+          backgroundColor: Colors.deepPurple,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          
+
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!isAdmin) {
+      return  Scaffold(
+        appBar: AppBar(
+          title: Text("إدارة الطلبات"),
+          backgroundColor: Colors.deepPurple,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        body: Center(child: Text("🚫  هذه الصفحة خاصة فقط لادارة الطلبات من المطاعم")),
+      );
+    }
+
+    // باقي كود الصفحة يبقى نفسه
     return Scaffold(
-      backgroundColor: const Color(0xfff7f8fa),
       appBar: AppBar(
         title: const Text("إدارة الطلبات"),
         backgroundColor: Colors.deepPurple,
@@ -41,8 +102,7 @@ class AdminOrdersScreen extends StatelessWidget {
               final totalPrice = data["totalPrice"] ?? 0;
               final currentStatus = data["status"] ?? "قيد التجهيز";
 
-              final validStatus =
-                  StatusDropdown.statuses.contains(currentStatus)
+              final validStatus = StatusDropdown.statuses.contains(currentStatus)
                   ? currentStatus
                   : StatusDropdown.statuses.first;
 
@@ -60,6 +120,7 @@ class AdminOrdersScreen extends StatelessWidget {
     );
   }
 }
+
 
 class OrderCard extends StatelessWidget {
   final String orderId;

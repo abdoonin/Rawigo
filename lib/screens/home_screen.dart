@@ -7,8 +7,8 @@ import 'package:rawi_go/screens/my_orders_screen.dart';
 import 'package:rawi_go/screens/order_details_screen.dart';
 import 'package:rawi_go/screens/search_screen.dart';
 import 'package:rawi_go/screens/settings_screen.dart';
+import 'package:rawi_go/widgets/dummy_data.dart';
 import '../services/firebase_service.dart';
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -18,12 +18,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   // Get the current user from Firebase Auth
-  // This will be used to display user-specific data if needed
   final user = FirebaseAuth.instance.currentUser!;
-  // Index for the bottom navigation bar
   int _selectedIndex = 0;
   late Future<List<Map<String, dynamic>>> restaurants;
   final FirebaseService _firebaseService = FirebaseService();
+
+  // بيانات العروض الثابتة
+  final List<Map<String, dynamic>> offers = dummyOffers;
 
   @override
   void initState() {
@@ -42,17 +43,11 @@ class _HomeScreenState extends State<HomeScreen> {
             bottomRight: Radius.circular(12),
           ),
         ),
-        
         backgroundColor: Colors.teal,
         title: const Text('المطاعم'),
         actions: [
-          // IconButton for search functionality
           IconButton(
-            icon: const Icon(
-              Icons.search_rounded,
-              size: 32,
-              color: Colors.white,
-            ),
+            icon: const Icon(Icons.search_rounded, size: 32, color: Colors.white),
             tooltip: 'البحث عن طبق',
             onPressed: () {
               Navigator.push(
@@ -63,54 +58,132 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: restaurants,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("لا يوجد مطاعم حالياً"));
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(6.0),
-            itemCount: snapshot.data!.length,
-            itemBuilder: (context, index) {
-              var restaurant = snapshot.data![index];
-              return ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Colors.teal, width: 1.6),
-                ),
-                leading:
-                    restaurant['imageUrl'] != null &&
-                        restaurant['imageUrl'].isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: restaurant['imageUrl'],
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                      )
-                    : const Icon(Icons.restaurant_menu_rounded, size: 60),
-                contentPadding: const EdgeInsets.all(5.0),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded),
-                title: Text(restaurant['name']),
-                subtitle: Text(restaurant['address']),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          OrderDetailsScreen(restaurantId: restaurant['id']),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(8.0),
+        scrollDirection: Axis.vertical,
+        child: Column(
+          children: [
+            // قسم العروض الأفقية
+            SizedBox(
+              height: 180, // ارتفاع البطاقات الأفقية
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal, // عرض البطاقات بشكل أفقي
+                itemCount: offers.length,
+                itemBuilder: (context, index) {
+                  var offer = offers[index];
+                  return GestureDetector(
+                    onTap: () {
+                      // يمكنك إضافة وظيفة عند الضغط على البطاقة
+                      
+                    },
+                    child: Card(
+                      elevation: 4,
+                      margin: const EdgeInsets.all(8.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),side: const BorderSide(color: Colors.teal, width: 1.6)),
+                      child: Container(
+                        width: 250, // عرض البطاقة
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          image: DecorationImage(
+                            image: CachedNetworkImageProvider(offer['imageUrl']),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              bottom: 10,
+                              left: 10,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    textDirection: TextDirection.rtl,
+                                    offer['restaurantName'],
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      shadows: [Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 4)],
+                                    ),
+                                  ),
+                                  Text(
+                                    textDirection: TextDirection.rtl,
+                                    offer['description'],
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                      shadows: [Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 4)],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   );
                 },
-              );
-            },
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-          );
-        },
+              ),
+            ),
+
+            // قائمة المطاعم
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: restaurants,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text("لا يوجد مطاعم حالياً"));
+                }
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(6.0),
+                  itemCount: snapshot.data!.length,
+                  itemBuilder: (context, index) {
+                    var restaurant = snapshot.data![index];
+                    return ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Colors.teal, width: 1.6),
+                      ),
+                      leading: restaurant['imageUrl'] != null && restaurant['imageUrl'].isNotEmpty
+                            ? ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: CachedNetworkImage(
+                              imageUrl: restaurant['imageUrl'],
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                              placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                              errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 60),
+                              ),
+                            )
+                          : const Icon(Icons.restaurant_menu_rounded, size: 60),
+                      contentPadding: const EdgeInsets.all(5.0),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded),
+                      title: Text(restaurant['name']),
+                      subtitle: Text(restaurant['address']),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => OrderDetailsScreen(restaurantId: restaurant['id']),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                );
+              },
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: FlashyTabBar(
         selectedIndex: _selectedIndex,
@@ -119,48 +192,25 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _selectedIndex = index;
           });
-          // Navigate to the selected page
           switch (index) {
             case 0:
-              // Already on HomeScreen, do nothing
               break;
             case 1:
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => CartScreen()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => CartScreen()));
               break;
             case 2:
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => MyOrdersScreen()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => MyOrdersScreen()));
               break;
             case 3:
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
               break;
           }
         },
         items: [
-          FlashyTabBarItem(
-            icon: Icon(Icons.restaurant_menu_rounded),
-            title: Text('المطاعم'),
-          ),
-          FlashyTabBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            title: Text('السلة'),
-          ),
-          FlashyTabBarItem(
-            icon: Icon(Icons.fastfood_rounded),
-            title: Text('طلباتي'),
-          ),
-          FlashyTabBarItem(
-            icon: Icon(Icons.settings_applications_sharp),
-            title: Text('الإعدادات'),
-          ),
+          FlashyTabBarItem(icon: const Icon(Icons.restaurant_menu_rounded), title: const Text('المطاعم')),
+          FlashyTabBarItem(icon: const Icon(Icons.shopping_cart_outlined), title: const Text('السلة')),
+          FlashyTabBarItem(icon: const Icon(Icons.fastfood_rounded), title: const Text('طلباتي')),
+          FlashyTabBarItem(icon: const Icon(Icons.settings_applications_sharp), title: const Text('الإعدادات')),
         ],
       ),
     );

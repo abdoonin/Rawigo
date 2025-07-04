@@ -2,11 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-
 class FirebaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final CollectionReference restaurants = FirebaseFirestore.instance.collection("restaurants");
 
-   // دالة تسجيل الدخول
+  // دالة تسجيل الدخول
   Future<bool> signIn(String email, String password) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
@@ -26,7 +27,7 @@ class FirebaseService {
   }
 
   // تسجيل مستخدم جديد
-   Future<bool> register(String email, String password) async {
+  Future<bool> register(String email, String password) async {
     try {
       await _auth.createUserWithEmailAndPassword(email: email, password: password);
       if (kDebugMode) {
@@ -61,7 +62,7 @@ class FirebaseService {
     }
   }
 
- // جلب كل الأطباق من جميع المطاعم
+  // جلب كل الأطباق من جميع المطاعم
   Future<List<Map<String, dynamic>>> getAllItems() async {
     try {
       QuerySnapshot restaurantsSnapshot = await _db.collection("restaurants").get();
@@ -87,56 +88,32 @@ class FirebaseService {
     }
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // 👇 إضافة جديدة: متغير ودالة ثانية لجلب المطاعم
-  final CollectionReference restaurants = FirebaseFirestore.instance.collection("restaurants");
-
   Future<List<Map<String, dynamic>>> getRestaurantsV2() async {
     QuerySnapshot snapshot = await restaurants.get();
     return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>}).toList();
   }
 
-final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-Future<bool> registerRestaurant(String email, String password) async {
-  try {
-    UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-    await result.user?.sendEmailVerification(); // اختياري
-
-    // حفظ البيانات الإضافية مع الدور
-    await _db.collection("users").doc(result.user?.uid).set({
-      "email": email,
-      "role": "restaurant",
-      "timestamp": FieldValue.serverTimestamp(),
-    });
-
-    return true;
-  } catch (e) {
-    print("Error registering restaurant: $e");
-    return false;
+  Future<bool> registerRestaurant(String email, String password) async {
+    try {
+      UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      await result.user?.sendEmailVerification(); // اختياري
+      await _db.collection("users").doc(result.user?.uid).set({
+        "email": email,
+        "role": "restaurant",
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+      return true;
+    } catch (e) {
+      print("Error registering restaurant: $e");
+      return false;
+    }
   }
-}
 
-// إضافة الطبق إلى السلة
+  // إضافة الطبق إلى السلة
   Future<void> addToCart(Map<String, dynamic> item) async {
     try {
-      final userId = "user_id_here"; // استبدل هذا بمعرف المستخدم الحالي (يمكنك استخدام FirebaseAuth.instance.currentUser?.uid)
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception("User not logged in");
       await _db.collection("users").doc(userId).collection("cart").add({
         "itemId": item['id'],
         "name": item['name'],
@@ -150,36 +127,27 @@ Future<bool> registerRestaurant(String email, String password) async {
     }
   }
 
-
-
-
-
-
-
-
-  
-//دالة حفظ الطلب في فايربايس
-Future<bool> addOrderToFirebase({
-  required String userId,
-  required List<Map<String, dynamic>> items,
-  required double totalPrice,
-}) async {
-  final FirebaseFirestore db = FirebaseFirestore.instance;
-  try {
-    await db.collection("orders").add({
-      "userId": userId,
-      "items": items,
-      "totalPrice": totalPrice,
-      "status": "قيد التجهيز",
-      "timestamp": FieldValue.serverTimestamp(),
-    });
-    return true;
-  } catch (e) {
-    if (kDebugMode) {
-      print("Error adding order: $e");
+  // دالة حفظ الطلب في فايربايس
+  Future<bool> addOrderToFirebase({
+    required String userId,
+    required List<Map<String, dynamic>> items,
+    required double totalPrice,
+  }) async {
+    try {
+      await _db.collection("orders").add({
+        "userId": userId,
+        "items": items,
+        "totalPrice": totalPrice,
+        "status": "قيد التجهيز",
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error adding order: $e");
+      }
+      return false;
     }
-    return false;
   }
-}
 }
 
